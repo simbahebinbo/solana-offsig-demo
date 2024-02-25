@@ -84,7 +84,7 @@ pub mod offsig_demo {
         let my_account = &mut ctx.accounts.my_account;
         let ed25519_msg_hash = validate_action(&ctx.accounts.instruction_acc, my_account)?;
         let msg_hash = solana_program::hash::hash(&message);
-        let msg_hash_vec = msg_hash.try_to_vec()?;
+        let msg_hash_vec = msg_hash.to_bytes().to_vec();
         if !ed25519_msg_hash.eq(&msg_hash_vec) {
             return Err(ErrorCode::InvalidVerification.into());
         }

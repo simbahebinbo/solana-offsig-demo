@@ -1,13 +1,14 @@
 import assert from 'assert'
 import { createHash } from 'crypto'
 import * as ed from '@noble/ed25519'
-import * as anchor from '@project-serum/anchor';
-import { Program } from '@project-serum/anchor';
+import * as anchor from '@coral-xyz/anchor';
+import { Program } from '@coral-xyz/anchor';
+// @ts-ignore
 import { OffsigDemo } from '../target/types/offsig_demo';
 
 describe('offsig-demo', () => {
 
-    let provider = anchor.Provider.env()
+    let provider = anchor.AnchorProvider.env()
     // Configure the client to use the local cluster.
     anchor.setProvider(provider);
 
@@ -24,14 +25,14 @@ describe('offsig-demo', () => {
 
     it('Is initialized!', async () => {
         myAccount = anchor.web3.Keypair.generate()
-        const tx = await program.rpc.initialize(Array.from(groupKey), {
-            accounts: {
+        const tx = await program.methods.initialize(Array.from(groupKey))
+            .accounts({
                 myAccount: myAccount.publicKey,
                 user: provider.wallet.publicKey,
                 systemProgram: anchor.web3.SystemProgram.programId,
-            },
-            signers: [myAccount]
-        });
+            })
+            .signers([myAccount])
+            .rpc();
         console.log("Your transaction signature", tx);
 
         const myAccountAccount = await program.account.myAccount.fetch(myAccount.publicKey);
@@ -60,15 +61,17 @@ describe('offsig-demo', () => {
             message: msgHash,
             signature: signature
         })
-        const programInstruction = program.instruction.verify(Buffer.from(message), {
-            accounts: {
+        const programInstruction = await program.methods.verify(Buffer.from(message))
+            .accounts({
                 myAccount: myAccount.publicKey,
                 instructionAcc: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY
-            }
-        })
+            })
+            .instruction()
+
         const txn = new anchor.web3.Transaction()
         txn.add(verifyInstruction, programInstruction)
-        const tx = await provider.send(txn)
+        const tx = await provider.sendAndConfirm(txn)
         console.log('transaction signature:', tx);
     })
 });
+
